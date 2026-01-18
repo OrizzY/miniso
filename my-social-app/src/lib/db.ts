@@ -80,15 +80,27 @@ export async function createPost(userId: number, content: string) {
     return result.lastID;
 }
 
-export async function getPosts(limit = 50, offset = 0) {
+export async function getPosts(limit = 50, offset = 0, currentUserId?: number, authorId?: number) {
     const database = await getDb();
-    return await database.all(`
-		SELECT posts.*, users.username
+    const query = `
+		SELECT 
+            posts.*, 
+            users.username,
+            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as likes_count
+            ${currentUserId ? ', (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked' : ''}
 		FROM posts
 		JOIN users ON posts.user_id = users.id
+        ${authorId ? 'WHERE posts.user_id = ?' : ''}
 		ORDER BY posts.created_at DESC
 		LIMIT ? OFFSET ?
-	`, [limit, offset]);
+	`;
+
+    const params: any[] = [];
+    if (currentUserId) params.push(currentUserId);
+    if (authorId) params.push(authorId);
+    params.push(limit, offset);
+
+    return await database.all(query, params);
 }
 
 export async function getPostsByUser(userId: number) {

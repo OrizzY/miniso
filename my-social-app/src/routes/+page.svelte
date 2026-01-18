@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
+    import Post from "$lib/components/Post.svelte";
 
     let user: any = null;
     let posts: any[] = [];
@@ -22,7 +23,11 @@
     async function loadPosts() {
         loading = true;
         try {
-            const response = await fetch("/api/posts");
+            const headers: HeadersInit = {};
+            if (user) {
+                headers["user-data"] = JSON.stringify(user);
+            }
+            const response = await fetch("/api/posts", { headers });
             if (response.ok) {
                 posts = await response.json();
             }
@@ -65,83 +70,89 @@
     }
 </script>
 
-<div class="min-h-screen bg-gray-100">
-    <!-- Header -->
-    <header class="bg-white shadow">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <h1 class="text-2xl font-bold text-gray-900">Social App</h1>
-                <div class="flex items-center space-x-4">
-                    <span class="text-gray-700">Welcome, {user?.username}</span>
-                    <button
-                        on:click={logout}
-                        class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                    >
-                        Logout
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <!-- Post Form -->
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 class="text-lg font-semibold mb-4">What's on your mind?</h2>
+<div class="max-w-xl mx-auto py-8 px-4 sm:px-0">
+    <!-- Post Form -->
+    <div
+        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 transition-shadow hover:shadow-md duration-300"
+    >
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Create Post</h2>
+        <div class="relative">
             <textarea
                 bind:value={newPost}
-                placeholder="Share your thoughts..."
-                class="w-full p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="What's happening?"
+                class="w-full p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white text-gray-900 placeholder-gray-400"
                 rows="3"
             ></textarea>
+        </div>
+        <div class="mt-4 flex justify-end">
             <button
                 on:click={handlePost}
                 disabled={posting || !newPost.trim()}
-                class="mt-3 bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="bg-indigo-600 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-sm flex items-center"
             >
-                {posting ? "Posting..." : "Post"}
+                {#if posting}
+                    <svg
+                        class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        ></circle>
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                    </svg>
+                    Posting...
+                {:else}
+                    Post
+                {/if}
             </button>
         </div>
+    </div>
 
-        <!-- Posts -->
-        {#if loading}
-            <div class="text-center py-8">Loading posts...</div>
-        {:else if posts.length === 0}
-            <div class="text-center py-8 text-gray-500">
-                No posts yet. Be the first to post!
-            </div>
-        {:else}
-            <div class="space-y-6">
-                {#each posts as post}
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center mb-4">
-                            <div
-                                class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-semibold"
-                            >
-                                {post.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="font-semibold text-gray-900">
-                                    {post.username}
-                                </h3>
-                                <p class="text-sm text-gray-500">
-                                    {new Date(post.created_at).toLocaleString()}
-                                </p>
-                            </div>
-                        </div>
-                        <p class="text-gray-800 mb-4">{post.content}</p>
-                        <div class="flex items-center space-x-4">
-                            <button
-                                class="text-gray-500 hover:text-red-500 flex items-center space-x-1"
-                            >
-                                <span>❤️</span>
-                                <span>0</span>
-                            </button>
+    <!-- Posts -->
+    {#if loading}
+        <div class="space-y-4">
+            {#each Array(3) as _}
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-pulse"
+                >
+                    <div class="flex items-center mb-4">
+                        <div class="rounded-full bg-gray-200 h-10 w-10"></div>
+                        <div class="ml-3 space-y-2">
+                            <div class="h-4 bg-gray-200 rounded w-24"></div>
+                            <div class="h-3 bg-gray-200 rounded w-16"></div>
                         </div>
                     </div>
-                {/each}
-            </div>
-        {/if}
-    </main>
+                    <div class="space-y-2">
+                        <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+            {/each}
+        </div>
+    {:else if posts.length === 0}
+        <div
+            class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100"
+        >
+            <div class="text-6xl mb-4">📝</div>
+            <h3 class="text-lg font-medium text-gray-900">No posts yet</h3>
+            <p class="text-gray-500 mt-1">Be the first to share something!</p>
+        </div>
+    {:else}
+        <div class="space-y-6">
+            {#each posts as post (post.id)}
+                <Post {post} {user} />
+            {/each}
+        </div>
+    {/if}
 </div>

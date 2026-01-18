@@ -2,9 +2,24 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getPosts, createPost } from '$lib/db';
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ request, url }) => {
     try {
-        const posts = await getPosts();
+        const userData = request.headers.get('user-data');
+        let userId: number | undefined;
+
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                userId = user.id;
+            } catch (e) {
+                // Invalid user data, treat as guest
+            }
+        }
+
+        const authorParam = url.searchParams.get('userId');
+        const authorId = authorParam ? parseInt(authorParam) : undefined;
+
+        const posts = await getPosts(50, 0, userId, authorId);
         return json(posts);
     } catch (error) {
         console.error('Failed to fetch posts:', error);
